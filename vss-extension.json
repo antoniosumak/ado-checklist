@@ -1,0 +1,38 @@
+{
+  "manifestVersion": 1,
+  "id": "work-item-checklist",
+  "publisher": "Antonioumak",
+  "version": "0.7.0",
+  "name": "Work Item Checklist",
+  "description": "Checklist group on the work item form. Default items per work item type, editable per item, shared across users.",
+  "public": true,
+  "icons": { "default": "images/icon.png" },
+  "content": { "details": { "path": "overview.md" } },
+  "tags": ["checklist", "work item", "boards", "definition of done", "to-do"],
+  "categories": ["Azure Boards"],
+  "targets": [{ "id": "Microsoft.VisualStudio.Services" }],
+  "scopes": ["vso.work_write"],
+  "contributions": [
+    {
+      "id": "checklist-group",
+      "type": "ms.vss-work-web.work-item-form-group",
+      "targets": ["ms.vss-work-web.work-item-form"],
+      "properties": {
+        "name": "Checklist",
+        "uri": "static/checklist.html",
+        "height": 220
+      }
+    },
+    {
+      "id": "checklist-templates",
+      "type": "ms.vss-web.hub",
+      "targets": ["ms.vss-web.project-admin-hub-group"],
+      "properties": {
+        "name": "Checklist templates",
+        "uri": "static/templates.html",
+        "order": 100
+      }
+    }
+  ],
+  "files": [{ "path": "static", "addressable": true }]
+}

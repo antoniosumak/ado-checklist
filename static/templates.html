@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="list.css">
+<style>
+  body { padding: 24px 32px; background: #f8f8f8; }
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
+  h1 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+  .sub, #msg { margin: 0; color: var(--text-2); }
+  #msg:not(:empty) { margin: -8px 0 12px; font-size: 13px; }
+  .page-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+  .unsaved { display: flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--text-2); font-size: 13px; }
+  .unsaved::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #d83b01; }
+  .btn { padding: 5px 16px; border: 1px solid #8a8886; border-radius: 2px; background: var(--surface); font-weight: 600; cursor: pointer; }
+  .btn.primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.busy { opacity: .8; }
+  .saved { display: flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--success); font-size: 13px; }
+  .spinner { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } }
+  .loading { display: flex; align-items: center; gap: 10px; padding: 40px 0; color: var(--text-2); }
+  .card { display: flex; min-height: 520px; border-radius: 4px; background: var(--surface); box-shadow: 0 1.6px 3.6px #00000021; }
+  .types { flex: none; width: 300px; padding: 16px 0; border-right: 1px solid var(--line); }
+  .search { display: flex; align-items: center; gap: 8px; height: 32px; margin: 0 16px 12px; padding: 0 10px; border: 1px solid #8a8886; border-radius: 2px; color: var(--text-2); }
+  .search:focus-within { border-color: var(--accent); }
+  .search input { flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; color: var(--text); background: none; }
+  .search input::placeholder { color: var(--text-3); }
+  .label { padding: 4px 16px 6px; color: var(--text-2); font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+  .type { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 16px 10px 14px; border: 0; border-left: 2px solid transparent; background: none; text-align: left; cursor: pointer; }
+  .type:hover { background: var(--hover); }
+  .type[aria-current] { border-left-color: var(--accent); background: #eff6fc; font-weight: 600; }
+  .type img { width: 16px; height: 16px; }
+  .type .name { flex: 1; }
+  .count { color: var(--text-2); font-size: 12px; font-weight: 400; }
+  .count.none { color: var(--text-3); }
+  .editor { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; padding: 24px 32px; }
+  .editor-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  h2 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 18px; font-weight: 600; }
+  .type-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 4px; }
+  .copy { display: flex; align-items: center; gap: 6px; padding: 6px 8px; color: var(--accent); position: relative; }
+  .copy select { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .copy:hover { background: var(--hover); border-radius: 2px; }
+  .copy:focus-within { outline: 2px solid var(--accent); }
+  .auto { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 4px; background: #faf9f8; }
+  .auto strong { display: block; margin-bottom: 2px; font-weight: 600; }
+  .auto span { color: var(--text-2); font-size: 13px; }
+  .switch { flex: none; position: relative; width: 40px; height: 20px; margin-top: 0; padding: 0; border: 1px solid var(--text-2); border-radius: 10px; background: var(--surface); cursor: pointer; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--text-2); transition: transform .15s; }
+  .switch[aria-checked="true"] { border-color: var(--accent); background: var(--accent); }
+  .switch[aria-checked="true"]::after { background: #fff; transform: translateX(20px); }
+  .items-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+  h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 600; }
+  .items-header small { color: var(--text-3); font-size: 12px; }
+  .empty { display: grid; justify-items: center; gap: 8px; padding: 40px 24px; text-align: center; }
+  .empty-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--hover); color: var(--text-2); }
+  .empty strong { font-weight: 600; }
+  .empty span { max-width: 360px; color: var(--text-2); font-size: 13px; }
+</style>
+</head>
+<body>
+  <div class="page-header">
+    <div>
+      <h1>Checklist templates</h1>
+      <p class="sub">Each work item type can have its own checklist. New work items of that type start with these items.</p>
+    </div>
+    <div class="page-actions" id="actions" hidden>
+      <span class="unsaved" id="unsaved" hidden>Unsaved changes</span>
+      <span class="saved" id="saved" role="status" hidden></span>
+      <button class="btn" id="discard" type="button">Discard</button>
+      <button class="btn primary" id="save" type="button">Save</button>
+    </div>
+  </div>
+  <div id="msg"></div>
+  <div class="loading" id="loading"><span class="spinner"></span>Loading templates…</div>
+  <div class="card" id="card" hidden>
+    <nav class="types" aria-label="Work item types">
+      <label class="search"><span id="search-icon"></span><input id="filter" type="search" placeholder="Filter types" aria-label="Filter types"></label>
+      <div class="label">WORK ITEM TYPES</div>
+      <div id="types"></div>
+    </nav>
+    <section class="editor" id="editor"></section>
+  </div>
+  <script src="templates.js"></script>
+</body>
+</html>

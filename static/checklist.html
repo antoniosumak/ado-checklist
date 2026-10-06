@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="list.css">
+<style>
+  body { background: transparent; }
+  header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid #eaeaea; }
+  h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 600; }
+  #main { padding-top: 12px; }
+  #msg:not(:empty) { margin-bottom: 8px; color: var(--text-2); font-size: 12px; }
+  .progress { display: grid; gap: 6px; padding-bottom: 10px; color: var(--text-2); font-size: 12px; }
+  .progress div { display: flex; justify-content: space-between; }
+  .progress.complete strong { color: var(--success); }
+  .progress strong { font-weight: 600; }
+  .track { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .track span { display: block; height: 100%; border-radius: 2px; background: var(--accent); transition: width .2s; }
+  .complete .track span { background: var(--success); }
+  .empty { padding: 4px 8px 6px 26px; color: var(--text); font-size: 13px; }
+  #actions { display: flex; align-items: center; gap: 2px; }
+  .sync { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border: 0; border-radius: 4px; background: none; color: var(--text-2); font-size: 13px; cursor: pointer; }
+  .sync:hover, .sync:focus-visible { background: var(--hover); color: var(--text); }
+  .sync .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .banner { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; padding: 10px 12px; border-radius: 4px; font-size: 13px; line-height: 18px; }
+  .banner > svg { flex: none; margin-top: 1px; }
+  .banner.info { background: #eff6fc; }
+  .banner.info > svg { color: var(--accent); }
+  .banner.success { align-items: center; background: var(--success-bg); }
+  .banner.success > svg { color: var(--success); margin-top: 0; }
+  .banner .copy { flex: 1; display: grid; gap: 2px; }
+  .banner strong { font-weight: 600; }
+  .banner .copy span { color: var(--text-2); }
+  .banner .icon-btn { width: 20px; height: 20px; margin-right: -4px; }
+  .link { padding: 0; border: 0; background: none; color: var(--accent); font-size: 13px; font-weight: 600; line-height: 18px; cursor: pointer; }
+  .link:hover { text-decoration: underline; }
+  .dialog { margin: 4px 0 8px; border: 1px solid #e1dfdd; border-radius: 4px; background: var(--surface); box-shadow: 0 6.4px 14.4px #00000024; }
+  .dialog-header { display: flex; justify-content: space-between; gap: 16px; padding: 20px 24px 8px; }
+  .dialog-header h3 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+  .dialog-header p { margin: 0; color: var(--text-2); font-size: 12px; }
+  .dialog-body { display: grid; gap: 16px; padding: 12px 24px 16px; }
+  .section { display: grid; gap: 4px; }
+  .section h4 { margin: 0; color: var(--text-2); font-size: 12px; font-weight: 600; }
+  .change { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 2px; font-size: 13px; }
+  .change svg { flex: none; }
+  .change span { flex: 1; overflow-wrap: anywhere; }
+  .change small { color: var(--text-3); font-size: 12px; }
+  .change.add { background: #f1faf1; }
+  .change.add svg { color: var(--success); }
+  .change.extra { background: #faf9f8; }
+  .change.extra svg { color: var(--text-2); }
+  .change.same svg { color: var(--text-3); }
+  .remove-option { display: flex; align-items: flex-start; gap: 10px; padding-top: 12px; border-top: 1px solid #eaeaea; font-size: 13px; cursor: pointer; }
+  .remove-option > span { display: grid; gap: 2px; }
+  .remove-option small { color: var(--text-2); font-size: 12px; }
+  .dialog-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 8px 24px 20px; }
+  .btn { padding: 5px 16px; border: 1px solid #8a8886; border-radius: 2px; background: var(--surface); font-weight: 600; cursor: pointer; }
+  .btn.primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .btn:disabled { opacity: .5; cursor: default; }
+</style>
+</head>
+<body>
+  <header><h2 id="title">Checklist</h2><div id="actions"></div></header>
+  <div id="main"><div id="msg"></div><div id="body"></div></div>
+  <script src="checklist.js"></script>
+</body>
+</html>

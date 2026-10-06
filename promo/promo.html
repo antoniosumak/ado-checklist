@@ -1,0 +1,805 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Checklist promo</title>
+<style>
+:root { --text:#323130; --text-2:#605e5c; --text-3:#8a8886; --line:#edebe9; --hover:#f3f2f1; --accent:#0078d4; --success:#107c10; --success-bg:#dff6dd; --surface:#fff; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #f8f8f8; }
+body { font: 14px "Segoe UI", "Noto Sans", sans-serif; color: var(--text); }
+button { font: inherit; color: inherit; }
+svg { display: block; }
+#stage { position: relative; width: 1440px; height: 1440px; overflow: hidden; background: #f8f8f8; }
+#world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.abs { position: absolute; }
+.surface { background: #fff; border-radius: 4px; box-shadow: 0 1.6px 3.6px #00000021; overflow: hidden; }
+.layer { position: absolute; left: 0; top: 0; }
+.stack { display: inline-grid; }
+.stack > * { grid-area: 1 / 1; white-space: nowrap; }
+
+/* ---- list.css (hover → .hov) ---- */
+.icon-btn { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--text-2); }
+.row-actions .icon-btn { width: 24px; height: 24px; }
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; background: var(--hover); color: var(--text-2); font-size: 12px; font-weight: 600; line-height: 16px; }
+.row { display: flex; align-items: center; gap: 8px; min-height: 31px; padding: 6px 8px 6px 4px; border-radius: 4px; }
+.row .text { flex: 1; min-width: 0; line-height: 19px; white-space: nowrap; }
+.grip { flex: none; display: grid; width: 14px; color: var(--text-3); opacity: 0; }
+.row-actions { display: flex; gap: 2px; opacity: 0; }
+.row.hov { background: var(--hover); }
+.row.hov .grip, .row.hov .row-actions { opacity: 1; }
+.list.numbered .grip { opacity: .5; }
+.row.fresh { background: #eff6fc; }
+.new-tag { flex: none; padding: 1px 6px; border-radius: 2px; background: var(--surface); color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .5px; line-height: 14px; }
+.row.fresh:not(.hov) .row-actions, .row.fresh.hov .new-tag { display: none; }
+.num { flex: none; width: 14px; color: var(--text-3); font-size: 12px; text-align: right; }
+.box { flex: none; width: 16px; height: 16px; margin: 0; border: 1px solid var(--text-2); border-radius: 3px; background: var(--surface); display: grid; place-items: center; }
+span.box.deco { border-color: var(--text-3); }
+.row.hov .box.cb.off { border-color: var(--text); }
+.box path { stroke-dasharray: 23; }
+.field { flex: 1; min-width: 0; height: 30px; padding: 0 8px; border: 1px solid var(--accent); border-radius: 2px; color: var(--text); background: var(--surface); display: flex; align-items: center; white-space: pre; }
+.field .ph { color: var(--text-3); }
+.caret { display: inline-block; width: 1px; height: 17px; background: var(--accent); margin: 0 0 0 1px; }
+.new .row { padding-bottom: 2px; }
+.hint { padding: 2px 8px 6px 50px; color: var(--text-2); font-size: 12px; }
+.numbered .hint { padding-left: 74px; }
+.row.add { width: fit-content; border: 0; background: none; color: var(--accent); }
+.row.add.hov { background: var(--hover); }
+
+/* ---- templates.html ---- */
+.tp h1 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+.tp .sub { margin: 0; color: var(--text-2); }
+.tp .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.tp .page-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+.tp .unsaved { display: flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--text-2); font-size: 13px; white-space: nowrap; }
+.tp .unsaved::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #d83b01; }
+.tp .saved { display: flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--success); font-size: 13px; }
+.btn { padding: 5px 16px; border: 1px solid #8a8886; border-radius: 2px; background: var(--surface); font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; overflow: hidden; }
+.btn.primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+.btn.primary.hov { background: #106ebe; border-color: #106ebe; }
+.spinner { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; }
+.tp .types { flex: none; width: 300px; padding: 16px 0; border-right: 1px solid var(--line); }
+.tp .search { display: flex; align-items: center; gap: 8px; height: 32px; margin: 0 16px 12px; padding: 0 10px; border: 1px solid #8a8886; border-radius: 2px; color: var(--text-2); }
+.tp .search span { color: var(--text-3); }
+.tp .label { padding: 4px 16px 6px; color: var(--text-2); font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.tp .type { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 16px 10px 14px; border: 0; border-left: 2px solid transparent; background: none; text-align: left; }
+.tp .type[aria-current] { border-left-color: var(--accent); background: #eff6fc; font-weight: 600; }
+.tp .type .name { flex: 1; }
+.tp .count { color: var(--text-2); font-size: 12px; font-weight: 400; }
+.tp .count.none { color: var(--text-3); }
+.tp .editor { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; padding: 24px 32px; }
+.tp .editor-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.tp h2 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 18px; font-weight: 600; }
+.tp .copy { display: flex; align-items: center; gap: 6px; padding: 6px 8px; color: var(--accent); }
+.tp .auto { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 4px; background: #faf9f8; }
+.tp .auto strong { display: block; margin-bottom: 2px; font-weight: 600; }
+.tp .auto span { color: var(--text-2); font-size: 13px; }
+.tp .switch { flex: none; position: relative; width: 40px; height: 20px; padding: 0; border: 1px solid var(--accent); border-radius: 10px; background: var(--accent); }
+.tp .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transform: translateX(20px); }
+.tp .items-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); height: 29px; }
+.tp h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 600; }
+.tp .items-header small { color: var(--text-3); font-size: 12px; }
+.tp .empty { display: grid; justify-items: center; gap: 8px; padding: 40px 24px; text-align: center; }
+.tp .empty-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--hover); color: var(--text-2); }
+.tp .empty strong { font-weight: 600; }
+.tp .empty span { max-width: 360px; color: var(--text-2); font-size: 13px; }
+
+/* ---- checklist.html ---- */
+.ck header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid #eaeaea; }
+.ck h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 600; }
+.ck .progress { display: grid; gap: 6px; padding-bottom: 10px; color: var(--text-2); font-size: 12px; }
+.ck .progress > div { display: flex; justify-content: space-between; }
+.ck .progress strong { font-weight: 600; color: var(--success); }
+.ck .track { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.ck .track span { display: block; height: 100%; border-radius: 2px; }
+.ck .actions { display: flex; align-items: center; gap: 2px; }
+.ck .sync { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border: 0; border-radius: 4px; background: none; color: var(--text-2); font-size: 13px; }
+.ck .sync.hov { background: var(--hover); color: var(--text); }
+.banner { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; font-size: 13px; line-height: 18px; }
+.banner > svg { flex: none; margin-top: 1px; }
+.banner.info > svg { color: var(--accent); }
+.banner.success { align-items: center; }
+.banner.success > svg { color: var(--success); margin-top: 0; }
+.banner .copy { flex: 1; display: grid; gap: 2px; }
+.banner strong { font-weight: 600; }
+.banner .copy span { color: var(--text-2); }
+.banner .icon-btn { width: 20px; height: 20px; margin-right: -4px; }
+.link { padding: 0; border: 0; background: none; color: var(--accent); font-size: 13px; font-weight: 600; line-height: 18px; }
+.link.hov { text-decoration: underline; }
+.dialog-header { display: flex; justify-content: space-between; gap: 16px; padding: 20px 24px 8px; }
+.dialog-header h3 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+.dialog-header p { margin: 0; color: var(--text-2); font-size: 12px; }
+.dialog-body { display: grid; gap: 16px; padding: 12px 24px 16px; }
+.section { display: grid; gap: 4px; }
+.section h4 { margin: 0; color: var(--text-2); font-size: 12px; font-weight: 600; }
+.change { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 2px; font-size: 13px; }
+.change svg { flex: none; }
+.change span { flex: 1; }
+.change.add { background: #f1faf1; }
+.change.add svg { color: var(--success); }
+.change.same svg { color: var(--text-3); }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 8px 24px 20px; }
+
+/* board card */
+.bc { padding: 10px 12px 10px 16px; }
+.bc-title { display: flex; gap: 6px; font-weight: 600; line-height: 20px; white-space: nowrap; }
+.bc-id { color: var(--text-2); font-weight: 400; }
+.bc-field { display: flex; gap: 8px; margin-top: 8px; font-size: 12px; line-height: 16px; }
+.bc-field span:first-child { color: var(--text-2); }
+
+/* work item form (ADO) */
+.wf { background: #fff; overflow: hidden; }
+.wf .abs { white-space: nowrap; }
+.wf-bar { position: absolute; left: 0; top: 0; width: 6px; height: 122px; background: #009ccc; }
+.wf-type { display: flex; align-items: center; gap: 6px; color: #009ccc; font-size: 12px; font-weight: 600; letter-spacing: .02em; }
+.wf-win { display: flex; gap: 18px; color: var(--text-2); }
+.wf-title { display: flex; gap: 22px; font-size: 16px; line-height: 22px; }
+.wf-meta { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
+.wf-meta .acc { display: flex; align-items: center; gap: 4px; color: var(--accent); }
+.wf-meta strong { color: var(--text); font-weight: 600; }
+.wf-tools { display: flex; align-items: center; gap: 4px; }
+.wbtn { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border-radius: 2px; background: #f3f2f1; font-weight: 600; }
+.wbtn.sq { padding: 0 9px; }
+.wbtn.dis { color: #a19f9d; }
+.wico { display: grid; place-items: center; width: 32px; height: 32px; color: var(--text-2); }
+.wico.dis { color: #c8c6c4; }
+.wf-band { background: #f8f8f8; }
+.wf .lbl { color: var(--text-2); font-size: 12px; }
+.wf .val { display: flex; align-items: center; gap: 8px; }
+.wf .st { width: 9px; height: 9px; border-radius: 50%; background: #b2b2b2; }
+.wf-tabs { display: flex; align-items: stretch; height: 32px; }
+.wf-tabs > span { display: flex; align-items: center; gap: 6px; padding: 0 10px; color: var(--text-2); border-left: 1px solid var(--line); }
+.wf-tabs .on { color: var(--text); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); border-left: 0; }
+.wf-tabs .n { padding: 0 6px; border-radius: 9px; background: #f3f2f1; font-size: 11px; line-height: 16px; border: 0; }
+.wf-h { font-size: 15px; font-weight: 600; padding-bottom: 10px; border-bottom: 1px solid #eaeaea; }
+.wf-ph { color: var(--text-2); font-style: italic; white-space: normal; }
+.wf-lbl { color: var(--text-2); font-size: 12px; }
+.wf-box { padding: 12px 14px 12px 50px; background: #f8f8f8; line-height: 19px; white-space: normal; }
+.wf-box a, .wf-link { color: var(--accent); text-decoration: underline; }
+.wf-card { border-radius: 4px; box-shadow: 0 1.6px 3.6px #00000021; background: #fff; }
+.wf-avatar { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #f3f2f1; color: var(--text-2); }
+
+/* form header */
+.fh { padding: 14px 20px 14px 24px; }
+.fh-type { color: var(--text-2); font-size: 12px; font-weight: 600; letter-spacing: .04em; line-height: 16px; }
+.fh-title { margin-top: 6px; font-size: 20px; font-weight: 600; line-height: 28px; }
+.typebar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #009ccc; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="world">
+
+  <!-- templates page chrome -->
+  <div id="tplHead" class="abs tp" style="left:32px;top:24px;width:860px">
+    <div class="page-header">
+      <div><h1>Checklist templates</h1><p class="sub" style="max-width:280px">Each work item type can have its own checklist. New work items of that type start with these items.</p></div>
+      <div class="page-actions">
+        <span class="unsaved" id="unsaved">Unsaved changes</span>
+        <span class="saved" id="saved"></span>
+        <button class="btn" id="discard">Discard</button>
+        <button class="btn primary hv" id="save"><span class="stack" id="saveLbl"><span></span><span></span></span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- the work item form; the Checklist group's extension area is where the shape lands -->
+  <div id="form" class="abs wf" style="width:1976px;height:1040px"></div>
+
+  <!-- the one shape: templates editor card ⇄ Checklist group -->
+  <div id="shape" class="abs surface">
+    <div id="layE" class="layer tp" style="width:860px;height:520px">
+      <div style="display:flex;height:100%">
+        <nav class="types">
+          <div class="search" id="searchBox"><span></span></div>
+          <div class="label">WORK ITEM TYPES</div>
+          <div class="type"><span class="name">Epic</span><span class="count none">No template</span></div>
+          <div class="type"><span class="name">Feature</span><span class="count none">No template</span></div>
+          <div class="type" aria-current="true"><span class="name">Product Backlog Item</span><span class="count stack" id="navCount"><span></span><span></span></span></div>
+          <div class="type"><span class="name">Bug</span><span class="count">4 items</span></div>
+          <div class="type"><span class="name">Task</span><span class="count">1 item</span></div>
+        </nav>
+        <section class="editor">
+          <div class="editor-header"><h2>Product Backlog Item checklist</h2><span class="copy" id="copyFrom">Copy from another type</span></div>
+          <div class="auto"><span class="switch"></span><div><strong>Add to new Product Backlog Items automatically</strong><span>Every new Product Backlog Item starts with these items. People can still add, remove, or edit items on each work item.</span></div></div>
+          <div>
+            <div class="items-header"><h3>Items <span class="pill" id="ePill"><span class="stack"><span></span><span></span></span></span></h3><small id="eDrag">Drag to reorder</small></div>
+            <div id="elist" class="list numbered" style="position:relative;height:250px"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="layG" class="layer ck" style="width:560px">
+      <header class="abs" style="left:20px;right:20px;top:6px;height:35px">
+        <h2>Checklist<span id="pillSlot" style="display:inline-block;height:20px"></span></h2>
+        <div class="actions"><button class="sync hv" id="syncBtn"><span id="syncIcon"></span>Sync<span id="dotSlot" style="display:inline-block;width:6px;height:6px"></span></button><button class="icon-btn" id="eyeBtn"></button></div>
+      </header>
+      <div id="gProg" class="abs progress" style="left:20px;width:520px">
+        <div><span class="stack" id="progLbl"><span></span><span></span></span><span class="stack" id="progPct" style="justify-items:end"><span></span><span></span></span></div>
+        <div class="track"><span id="bar"></span></div>
+      </div>
+      <div id="glist" class="abs list" style="left:20px;width:520px"></div>
+    </div>
+  </div>
+
+  <!-- the dot → info banner → sync dialog → success banner -->
+  <div id="bn" class="abs" style="overflow:hidden">
+    <div id="bnInfo" class="layer banner info" style="width:520px"></div>
+    <div id="bnDialog" class="layer" style="width:520px"></div>
+    <div id="bnSuccess" class="layer banner success" style="width:520px"></div>
+  </div>
+
+  <!-- dialog primary button → NEW row -->
+  <div id="br" class="abs" style="overflow:hidden">
+    <div id="brBtn" class="layer" style="color:#fff;font-weight:600;display:grid;place-items:center;height:100%;width:100%">Add 1 item</div>
+    <div id="brRow" class="layer row fresh" style="width:520px;background:none"></div>
+  </div>
+
+  <!-- the pill ⇄ board card -->
+  <div id="pc" class="abs" style="overflow:hidden">
+    <div id="pcBar" class="typebar"></div>
+    <div id="pcPill" class="layer" style="display:flex;align-items:center;gap:4px;height:20px;padding:0 8px;font-size:12px;font-weight:600;line-height:16px">
+      <span id="pcCheck" style="overflow:hidden;display:block"></span><span class="stack" id="pcCount"><span></span><span></span></span>
+    </div>
+    <div id="pcCard" class="layer bc" style="width:272px;color:#323130">
+      <div class="bc-title"><span class="bc-id">4821</span><span>Checkout: saved cards</span></div>
+      <div class="bc-field" id="pcField"><span>Checklist</span><span>4/4</span></div>
+    </div>
+  </div>
+
+  <svg id="cursor" class="abs" width="15" height="22" viewBox="-1 -1 15 22" style="overflow:visible;transform-origin:0 0">
+    <path d="M0 0 L0 16.2 L4.1 12.4 L6.9 18.9 L9.6 17.7 L6.9 11.4 L12.4 11.4 Z" fill="#1b1a19" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>
+  </svg>
+</div></div>
+
+<script>
+// ---------- icons (the app's Lucide set) ----------
+const PATHS = {
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+  grip: '<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>',
+  eyeOff: '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  circleCheck: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  save: '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
+  chevronDown: '<path d="m6 9 6 6 6-6"/>',
+  eye: '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+  settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>',
+  more: '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',
+  history: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  paperclip: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+  minimize: '<path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="m14 10 7-7"/><path d="m3 21 7-7"/>',
+  clipboard: '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+  branch: '<path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
+  listChecks: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+};
+const icon = (n, s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PATHS[n]}</svg>`;
+const $ = (id) => document.getElementById(id);
+const h = (html) => { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstChild; };
+
+// ---------- time primitives: everything is a pure function of t ----------
+const L = 16, B = 0.5;              // internal clock: 8 bars; real time runs SLOW times slower
+const SLOW = 2;
+const T = (bar, beat) => ((bar - 1) * 4 + beat - 1) * B;
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const ease = (p) => 1 - Math.pow(1 - p, 3);
+function spring(t, w, z) {           // closed-form step response
+  if (t <= 0) return 0;
+  if (z >= 1) return 1 - (1 + w * t) * Math.exp(-w * t);
+  const wd = w * Math.sqrt(1 - z * z);
+  return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t));
+}
+// keys: [[time, value, mode?, w?], ...]; keys[0] is the value at loop start. One spring per change, summed.
+// The previous loop's changes are included, so a closed track (last value == first) is periodic in L.
+function tr(keys, t, w = 20, z = 0.84) {
+  const arr = Array.isArray(keys[0][1]);
+  const get = (k) => (arr ? k[1] : [k[1]]);
+  const v = get(keys[0]).slice();
+  for (const sh of [-L, 0]) for (let i = 1; i < keys.length; i++) {
+    const dt = t - (keys[i][0] + sh);
+    if (dt <= 0) continue;
+    const s = keys[i][2] === "snap" ? 1 : spring(dt, keys[i][3] ?? w, z);
+    const a = get(keys[i]), b = get(keys[i - 1]);
+    for (let j = 0; j < v.length; j++) v[j] += (a[j] - b[j]) * s;
+  }
+  return arr ? v : v[0];
+}
+const fade = (keys, t, w = 34) => clamp(tr(keys, t, w, 1));
+const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+const col = (keys, t, w = 26) => { const v = tr(keys.map(([a, c, m]) => [a, hex(c), m]), t, w, 1); return `rgb(${v.map((x) => clamp(Math.round(x), 0, 255)).join(",")})`; };
+const on = (t, a, b) => t >= a && t < b;
+
+function vis(el, o, blur = 5, dy = 0) {
+  el.style.opacity = o.toFixed(3);
+  el.style.visibility = o < 0.003 ? "hidden" : "visible";
+  el.style.filter = o > 0.997 ? "none" : `blur(${((1 - o) * blur).toFixed(2)}px)`;
+  if (dy) el.style.translate = `0 ${((1 - o) * dy).toFixed(2)}px`;
+}
+function place(el, x, y, w, hh) {
+  el.style.left = x + "px"; el.style.top = y + "px";
+  if (w != null) el.style.width = Math.max(0, w) + "px";
+  if (hh != null) el.style.height = Math.max(0, hh) + "px";
+}
+// Text that swaps: the old label exits, the new one enters a beat-fraction later, so they never overlap.
+function swapAt(changes, t) {
+  let i = -1;
+  for (let k = 0; k < changes.length; k++) if (changes[k][0] <= t) i = k;
+  let ti;
+  // changes[0] is the loop-start state, not a change: it was reached by the last change of the previous loop
+  if (i <= 0) { i = changes.length - 1; ti = changes[i][0] - L; } else ti = changes[i][0];
+  return { cur: changes[i][1], prev: changes[(i - 1 + changes.length) % changes.length][1], dt: t - ti };
+}
+function swap(el, changes, t) {
+  const { cur, prev, dt } = swapAt(changes, t);
+  const [A, Bp] = el.children;
+  if (A.innerHTML !== cur) A.innerHTML = cur;
+  if (Bp.innerHTML !== prev) Bp.innerHTML = prev;
+  const q = ease(clamp((dt - 0.05) / 0.16)), p = ease(clamp(dt / 0.09));
+  A.style.opacity = q; A.style.filter = q > 0.99 ? "none" : `blur(${(1 - q) * 3}px)`; A.style.translate = `0 ${(1 - q) * 4}px`;
+  Bp.style.opacity = 1 - p; Bp.style.filter = p < 0.01 ? "none" : `blur(${p * 3}px)`; Bp.style.translate = `0 ${-p * 4}px`;
+  Bp.style.display = p >= 1 || prev === cur ? "none" : "";
+}
+
+// ---------- story constants ----------
+const ITEMS = ["Design link added", "Acceptance criteria written", "Test Cases linked", "Screenshots attached"];
+const NEW_ITEM = "Accessibility checked";
+const TPL = { x: 32, y: 100, w: 860, h: 520 };
+const FH = { x: 182, y: 126, w: 560, h: 92 };
+const G = { x: 182, y: 230, w: 560 };
+const Y0 = 53;                          // group body top: 6 + header 35 + 12
+const CARD = { x: 1300, y: 170, w: 272 };
+const PITCH = 33;                       // row 31 + gap 2
+
+// typing: [start, end, text, enterAt]
+const TYPE = [
+  [T(1, 1) + 0.06, T(1, 2) - 0.07, ITEMS[0], T(1, 2)],
+  [T(1, 2) + 0.05, T(1, 3) - 0.06, ITEMS[1], T(1, 3)],
+  [T(1, 3) + 0.05, T(1, 4) - 0.07, ITEMS[2], T(1, 4)],
+  [T(1, 4) + 0.05, T(2, 1) - 0.07, ITEMS[3], T(2, 1)],
+  [T(6, 2) + 0.07, T(6, 3) - 0.07, NEW_ITEM, T(6, 3)],
+];
+// Keystrokes land about 44ms apart in real time; long items reveal 1–2 characters per keystroke.
+const KEYS = TYPE.map(([a, b, text]) => {
+  const n = Math.max(1, Math.min(text.length, Math.floor((b - a) / 0.022)));
+  return Array.from({ length: n }, (_, k) => ({ t: a + ((b - a) * k) / (n - 1 || 1) + (k % 3 === 1 ? 0.006 : 0), chars: Math.round((text.length * (k + 1)) / n) }));
+});
+const typed = (t) => {
+  for (let s = 0; s < TYPE.length; s++) {
+    const [a, , text, enter] = TYPE[s];
+    if (t >= a - 0.02 && t < enter) { let c = 0; for (const k of KEYS[s]) if (t >= k.t) c = k.chars; return { text: text.slice(0, c), typing: true }; }
+  }
+  return { text: "", typing: false };
+};
+const CHECK = [T(3, 3), T(3, 4), T(4, 1), T(4, 2)];
+const RESET = T(8, 3) + 0.45;           // everything snaps back while the group is folded away
+
+// ---------- DOM ----------
+const M = {};                            // measurements
+function build() {
+  const I = (n, sz = 16) => icon(n, sz);
+  $("form").innerHTML = `
+    <div class="wf-bar"></div>
+    <div class="abs wf-type" style="left:18px;top:13px">${I("clipboard", 14)}PRODUCT BACKLOG ITEM 4821</div>
+    <div class="abs wf-win" style="right:16px;top:12px">${I("minimize", 14)}${I("x")}</div>
+    <div class="abs wf-title" style="left:18px;top:47px"><span>4821</span><span>Checkout: saved cards</span></div>
+    <div class="abs wf-meta" style="left:30px;top:89px">${I("user", 14)}<span>No one selected</span></div>
+    <div class="abs wf-meta" style="left:296px;top:89px"><span class="acc">${I("message", 14)}0 Comments</span><strong>Add Tag</strong></div>
+    <div class="abs wf-tools" style="right:12px;top:83px"><span class="wbtn dis">${I("save", 14)}Save and Close</span><span class="wbtn dis sq">${I("chevronDown", 14)}</span><span style="width:4px"></span><span class="wbtn">${I("eye", 14)}Follow</span><span class="wbtn sq">${I("settings", 14)}</span><span class="wico">${I("refresh")}</span><span class="wico dis">${I("undo")}</span><span class="wico">${I("more")}</span></div>
+    <div class="abs wf-band" style="left:0;top:122px;width:1976px;height:78px"></div>
+    <div class="abs lbl" style="left:16px;top:137px">State</div>
+    <div class="abs val" style="left:78px;top:134px"><span class="st"></span>New</div>
+    <div class="abs lbl" style="left:16px;top:171px">Reason</div>
+    <div class="abs val" style="left:78px;top:168px;color:var(--text-2)">New backlog item</div>
+    <div class="abs lbl" style="left:306px;top:137px">Area</div>
+    <div class="abs val" style="left:394px;top:134px">Checkout</div>
+    <div class="abs lbl" style="left:306px;top:171px">Iteration</div>
+    <div class="abs val" style="left:394px;top:168px">Checkout\\Sprint 14</div>
+    <div class="abs wf-tabs" style="right:16px;top:166px"><span class="on">Details</span><span>${I("history", 14)}</span><span>${I("link", 14)}<span class="n">0</span></span><span>${I("paperclip", 14)}<span class="n">0</span></span></div>
+
+    <div class="abs" style="left:12px;top:218px;width:924px"><div class="wf-h">Description</div><div class="wf-ph" style="padding:14px 16px 0">Click to add Description.</div></div>
+    <div class="abs" style="left:12px;top:338px;width:924px"><div class="wf-h">Acceptance Criteria</div><div class="wf-ph" style="padding:14px 16px 0">Click to add Acceptance Criteria.</div></div>
+    <div class="abs" style="left:12px;top:458px;width:924px"><div class="wf-h">Discussion</div>
+      <div class="wf-card" style="margin-top:16px;padding:18px 20px 12px 24px;display:flex;gap:14px;align-items:flex-start">
+        <span class="wf-avatar">${I("user", 14)}</span>
+        <div style="flex:1"><div class="wf-ph" style="height:94px;padding:8px;border:1px solid var(--line);font-size:13px">Add a comment. Use # to link a work item, @ to mention a person, or ! to link a pull request.</div>
+        <div style="text-align:right;margin-top:8px;font-size:11px"><span class="wf-link">switch to Markdown editor</span></div></div>
+      </div></div>
+
+    <div class="abs" style="left:968px;top:218px;width:520px"><div class="wf-h">Planning</div>
+      <div class="wf-lbl" style="margin:12px 8px 6px">Priority</div><div style="margin:0 16px">2</div>
+      <div class="wf-lbl" style="margin:14px 8px 6px">Effort</div><div style="margin:0 16px">5</div></div>
+    <div class="abs" style="left:968px;top:380px;width:520px"><div class="wf-h">Checklist</div></div>
+
+    <div class="abs" style="left:1512px;top:218px;width:452px"><div class="wf-h">Deployment</div>
+      <div class="wf-box" style="margin:12px 8px 0">To track releases associated with this work item, go to <a>Releases</a> and turn on deployment status reporting for Boards in your pipeline's Options menu. <a>Learn more about deployment status reporting</a></div></div>
+    <div class="abs" style="left:1512px;top:380px;width:452px"><div class="wf-h">Development</div>
+      <div style="margin:14px 20px 10px;font-weight:600">Add link</div>
+      <div class="wf-box" style="margin:0 8px;position:relative"><span style="position:absolute;left:16px;top:14px;color:var(--text-2)">${I("branch", 20)}</span>Link an Azure Repos <a>commit</a>, <a>pull request</a> or <a>branch</a> to see the status of your development. You can also <a>create a branch</a> to get started.</div></div>
+    <div class="abs" style="left:1512px;top:596px;width:452px"><div class="wf-h">Related Work</div>
+      <div style="margin:14px 20px 10px;font-weight:600;display:flex;gap:8px;align-items:center">Add link${I("chevronDown", 14)}</div>
+      <div class="wf-box" style="margin:0 8px;padding-left:10px"><a>Add an existing work item as a parent</a></div></div>`;
+  place($("form"), G.x + 20 - 968, G.y - 414);
+
+  $("searchBox").innerHTML = `${icon("search", 14)}<span>Filter types</span>`;
+  $("copyFrom").insertAdjacentHTML("afterbegin", icon("copy", 14));
+  $("syncIcon").innerHTML = icon("refresh", 14);
+  $("eyeBtn").innerHTML = icon("eyeOff");
+  $("pcCheck").innerHTML = icon("check", 12);
+
+  const el = $("elist");
+  el.append(h(`<div id="eEmpty" class="empty abs" style="left:0;right:0;top:0"><span class="empty-icon">${icon("listChecks", 20)}</span><strong>No template for Product Backlog Items yet</strong><span>New Product Backlog Items start with an empty checklist. Add items here, or copy them from another type.</span></div>`));
+  [...ITEMS, NEW_ITEM].forEach((text, i) => el.append(h(
+    `<div class="row abs hv erow" style="left:0;right:0"><span class="grip">${icon("grip", 14)}</span><span class="num">${i + 1}</span><span class="box deco"></span><span class="text">${text}</span><span class="row-actions"><span class="icon-btn">${icon("pencil", 14)}</span><span class="icon-btn">${icon("trash", 14)}</span></span></div>`)));
+  el.append(h(`<div id="eAddRow" class="new abs" style="left:0;right:0"><div class="row"><span class="grip"></span><span class="num"></span><span class="box deco"></span><div class="field" id="eField"></div></div><div class="hint">Enter to add, Esc to cancel</div></div>`));
+  el.append(h(`<div id="eAddBtn" class="row add abs hv" style="left:0">${icon("plus")}Add item</div>`));
+
+  const gl = $("glist");
+  ITEMS.forEach((text) => gl.append(h(
+    `<div class="row abs hv grow" style="left:0;right:0"><span class="grip">${icon("grip", 14)}</span><span class="box cb"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><span class="text">${text}</span><span class="row-actions"><span class="icon-btn">${icon("pencil", 14)}</span><span class="icon-btn">${icon("trash", 14)}</span></span></div>`)));
+  gl.append(h(`<div id="gAdd" class="row add abs hv" style="left:0"><span class="grip"></span>${icon("plus")}Add item</div>`));
+
+  $("bnInfo").innerHTML = `${icon("info")}<div class="copy"><strong>The Product Backlog Item template has a new item</strong><span>Sync to add them. Your items and progress stay as they are.</span></div><button class="link hv" id="review">Review</button><span class="icon-btn">${icon("x", 14)}</span>`;
+  $("bnSuccess").innerHTML = `${icon("circleCheck")}<span class="copy">Synced with the Product Backlog Item template. 1 item added.</span><button class="link">Undo</button>`;
+  $("bnDialog").innerHTML = `
+    <div class="dialog-header"><div><h3>Sync with Product Backlog Item template</h3><p>Template updated just now</p></div><span class="icon-btn">${icon("x")}</span></div>
+    <div class="dialog-body">
+      <div class="section"><h4>WILL BE ADDED · 1</h4><div class="change add">${icon("plus", 14)}<span>${NEW_ITEM}</span></div></div>
+      <div class="section"><h4>UNCHANGED · 4</h4>${ITEMS.map((i) => `<div class="change same">${icon("check", 14)}<span>${i}</span></div>`).join("")}</div>
+    </div>
+    <div class="dialog-footer"><button class="btn">Cancel</button><button class="btn primary" id="dlgAdd" style="visibility:hidden">Add 1 item</button></div>`;
+  $("brRow").innerHTML = `<span class="grip">${icon("grip", 14)}</span><span class="box cb"></span><span class="text">${NEW_ITEM}</span><span class="new-tag">NEW</span>`;
+
+  TPL.y = Math.round($("tplHead").offsetTop + $("tplHead").offsetHeight + 20);
+  // measure (world transform is identity here)
+  const R = (e) => e.getBoundingClientRect();
+  const rel = (e, p) => { const a = R(e), b = R(p); return { x: a.left - b.left, y: a.top - b.top, w: a.width, h: a.height }; };
+  place($("shape"), TPL.x, TPL.y, TPL.w, TPL.h);
+  const wr = R($("world"));
+  const W = (e) => { const a = R(e); return { x: a.left - wr.left, y: a.top - wr.top, w: a.width, h: a.height }; };
+  M.elist = W($("elist"));
+  M.emptyH = $("eEmpty").offsetHeight;
+  M.addBtn = rel($("eAddBtn"), $("elist"));
+  M.save = W($("save"));
+  M.editorCol = W(document.querySelector(".tp .editor"));
+  M.head = W($("tplHead"));
+  const lbl = $("saveLbl").children[0];
+  lbl.innerHTML = "Save"; M.saveW = $("save").offsetWidth;
+  lbl.innerHTML = '<span style="display:flex;gap:8px;align-items:center"><span class="spinner"></span>Saving…</span>'; M.savingW = $("save").offsetWidth;
+  lbl.innerHTML = "";
+  M.pillSlot = rel($("pillSlot"), $("layG"));
+  M.dot = rel($("dotSlot"), $("layG"));
+  M.infoH = $("bnInfo").offsetHeight;
+  M.successH = $("bnSuccess").offsetHeight;
+  M.dialogH = $("bnDialog").offsetHeight;
+  M.dlgAdd = rel($("dlgAdd"), $("bnDialog"));
+  M.review = rel($("review"), $("bnInfo"));
+  M.cardH = $("pcCard").offsetHeight;
+  const probe = h('<span class="pill" style="position:absolute;visibility:hidden"></span>');
+  document.body.append(probe);
+  M.pillW = (s, check) => { probe.innerHTML = (check ? icon("check", 12) : "") + `<span>${s}</span>`; return probe.offsetWidth; };
+  M.pw = {}; for (const s of ["0/4", "1/4", "2/4", "3/4", "4/5"]) M.pw[s] = M.pillW(s, false); M.pw["4/4"] = M.pillW("4/4", true);
+  M.box = rel(document.querySelector(".grow .box"), document.querySelector(".grow"));
+  M.eBoxOff = rel($("eField"), $("eAddRow"));
+}
+
+// ---------- the timeline ----------
+function framing(r, pad = 48) {
+  const z = Math.min(1440 / (r.w + 2 * pad), 1440 / (r.h + 2 * pad));
+  return [r.x + r.w / 2, r.y + r.h / 2, Math.log(z)];
+}
+const U = (...rs) => { const x = Math.min(...rs.map((r) => r.x)), y = Math.min(...rs.map((r) => r.y)); return { x, y, w: Math.max(...rs.map((r) => r.x + r.w)) - x, h: Math.max(...rs.map((r) => r.y + r.h)) - y }; };
+
+let K;                                    // keyframe tracks, built once after measuring
+function keys() {
+  const gH = (bannerSpace, rows) => Y0 + bannerSpace + 36 + rows * PITCH - 2 + 31 + 16;
+  const H4 = gH(0, 4), Hinfo = gH(M.infoH + 12, 4), Hdlg = Y0 + 4 + M.dialogH + 8 + 16, H5 = gH(M.successH + 12, 5);
+  const rowsTop = [[0, Y0 + 36], [T(7, 3), Y0 + M.infoH + 12 + 36], [T(7, 4) + 0.3, Y0 + M.successH + 12 + 36, "snap"], [RESET, Y0 + 36, "snap"]];
+  const tplR = [TPL.x, TPL.y, TPL.w, TPL.h];
+  const grp = (hh) => [G.x, G.y, G.w, hh];
+  const shape = [[0, tplR], [T(3, 1), grp(H4)], [T(6, 1), tplR], [T(7, 1), grp(H4)], [T(7, 3), grp(Hinfo)], [T(7, 4), grp(Hdlg)], [T(8, 1), grp(H5)], [T(8, 3), tplR]];
+
+  // world rects for the camera
+  const el = M.elist, col = M.editorCol;
+  const editorWide = U(M.head, { x: TPL.x, y: TPL.y, w: TPL.w, h: TPL.h });
+  const editorList = { x: col.x + 8, y: M.save.y - 24, w: TPL.x + TPL.w + 24 - col.x - 8, h: 10 };
+  editorList.h = editorList.w;
+  const formR = { x: G.x + 20 - 968, y: G.y - 414, w: 1976, h: 1040 };
+  const form = (hh) => ({ x: G.x, y: G.y - 44, w: G.w, h: hh + 44 });   // zoomed onto the Checklist group
+  const groupOnly = (hh) => ({ x: G.x, y: G.y, w: G.w, h: hh });
+  const pillHome = { x: G.x + M.pillSlot.x, y: G.y + M.pillSlot.y, w: 40, h: 20 };
+  const card = { x: CARD.x, y: CARD.y, w: CARD.w, h: M.cardH };
+  const cam = [
+    [0, framing(editorWide, 40)],
+    [0.1, framing(editorList, 0)],
+    [T(3, 1) - 0.05, framing(formR, 16)],
+    [T(3, 2) - 0.05, framing(form(H4), 70)],
+    [T(4, 3), framing(U(pillHome, { x: G.x, y: G.y, w: 330, h: 60 }), 40)],
+    [T(4, 4) + 0.3, framing(card, 70)],
+    [T(5, 4), framing(form(H4), 44)],
+    [T(6, 1), framing(editorList, 0)],
+    [T(7, 1), framing(form(H4), 44)],
+    [T(7, 3), framing(form(Hinfo), 60)],
+    [T(7, 4), framing(form(Hdlg), 50)],
+    [T(8, 1) + 0.05, framing(form(H5), 60)],
+    [T(8, 3), framing(editorWide, 40)],
+  ];
+
+  // cursor targets
+  const addEmpty = [el.x + M.addBtn.x + 40, el.y + M.emptyH + 16];
+  const addAt = (n) => [el.x + 40, el.y + n * PITCH + 16];
+  const saveC = [M.save.x + M.save.w / 2 + 4, M.save.y + M.save.h / 2 + 2];
+  const box = (i, top) => [G.x + 20 + M.box.x + 8, G.y + top + i * PITCH + 15.5];
+  const top1 = Y0 + 36, topInfo = Y0 + M.infoH + 12 + 36;
+  const cardC = [CARD.x + 150, CARD.y + M.cardH / 2 + 4];
+  const reviewC = [G.x + 20 + M.review.x + M.review.w / 2, G.y + Y0 + M.review.y + 10];
+  const dlgAddC = [G.x + 20 + M.dlgAdd.x + M.dlgAdd.w / 2, G.y + Y0 + 4 + M.dlgAdd.y + M.dlgAdd.h / 2 + 2];
+  const cur = [
+    [0, addEmpty],
+    [0.12, [el.x + col.w - 70, el.y + 170]],
+    [T(2, 2) - 0.36, saveC],
+    [T(2, 4) + 0.12, [saveC[0] - 20, saveC[1] + 70]],
+    [T(3, 2) + 0.12, box(0, top1)],
+    [T(3, 3) + 0.1, box(1, top1)],
+    [T(3, 4) + 0.1, box(2, top1)],
+    [T(4, 1) + 0.1, box(3, top1)],
+    [T(4, 2) + 0.12, [G.x + 330, G.y + H4 + 24]],
+    [T(5, 2) + 0.12, cardC],
+    [T(5, 4) + 0.05, [G.x + 330, G.y + H4 + 24]],
+    [T(6, 2) - 0.36, addAt(4)],
+    [T(6, 2) + 0.12, [el.x + col.w - 70, el.y + 210]],
+    [T(6, 4) - 0.36, saveC],
+    [T(6, 4) + 0.14, [saveC[0] - 20, saveC[1] + 70]],
+    [T(7, 1) + 0.2, [G.x + 330, G.y + H4 + 24]],
+    [T(7, 4) - 0.36, reviewC],
+    [T(7, 4) + 0.08, dlgAddC],
+    [T(8, 1) + 0.06, [G.x + 330, G.y + H5 + 24]],
+    [T(8, 3) + 0.25, addEmpty],
+  ];
+  const clicks = [T(1, 1), T(2, 3), ...CHECK, T(6, 2), T(6, 4), T(7, 4), T(8, 1)];
+
+  // pill ⇄ board card
+  const pw = M.pw;
+  const pcRect = (s) => [G.x + M.pillSlot.x, G.y + M.pillSlot.y, pw[s], 20];
+  const cardR = [CARD.x, CARD.y, CARD.w, M.cardH];
+  const pc = [[0, pcRect("0/4")], [CHECK[0], pcRect("1/4")], [CHECK[1], pcRect("2/4")], [CHECK[2], pcRect("3/4")], [CHECK[3], pcRect("4/4")],
+    [T(4, 4), [G.x + M.pillSlot.x, G.y + M.pillSlot.y - 6, pw["4/4"], 20]], [T(5, 1), cardR], [T(5, 3), [CARD.x, CARD.y - 3, CARD.w, M.cardH]],
+    [T(5, 4), pcRect("4/4")], [T(8, 2), pcRect("4/5")], [RESET, pcRect("0/4"), "snap"]];
+
+  // dot → banner → dialog → success banner
+  const dot = [G.x + M.dot.x, G.y + M.dot.y, 6, 6];
+  const bx = G.x + 20, by = G.y + Y0;
+  const bn = [[0, dot], [T(7, 3), [bx, by, 520, M.infoH]], [T(7, 4), [bx, by + 4, 520, M.dialogH]], [T(8, 1), [bx, by, 520, M.successH]], [RESET, dot, "snap"]];
+  const btnR = [G.x + 20 + M.dlgAdd.x, by + 4 + M.dlgAdd.y, M.dlgAdd.w, M.dlgAdd.h];
+  const row5 = [G.x + 20, G.y + Y0 + M.successH + 12 + 36 + 4 * PITCH, 520, 31];
+  const br = [[0, btnR], [T(8, 1), row5], [RESET, btnR, "snap"]];
+
+  K = { shape, rowsTop, cam, cur, clicks, pc, bn, br, H4, top1, topInfo };
+}
+
+// ---------- seek ----------
+let hoverables;
+function seekAt(tIn, real = tIn * SLOW) {
+  const t = ((tIn % L) + L) % L;
+  const E = {};
+
+  // camera
+  const [cx, cy, lz] = tr(K.cam, t, 14, 0.95), z = Math.exp(lz);
+  $("world").style.transform = `translate(${(720 - cx * z).toFixed(3)}px, ${(720 - cy * z).toFixed(3)}px) scale(${z.toFixed(5)})`;
+
+  // which surface the shape is showing
+  const editorOn = fade([[0, 1], [T(3, 1), 0], [T(6, 1) + 0.06, 1], [T(7, 1), 0], [T(8, 3) + 0.08, 1]], t);
+  const groupOn = fade([[0, 0], [T(3, 1) + 0.08, 1], [T(6, 1), 0], [T(7, 1) + 0.08, 1], [T(8, 3), 0]], t);
+  const [sx, sy, sw, sh] = tr(K.shape, t, 19);
+  place($("shape"), sx, sy, sw, sh);
+  vis($("layE"), editorOn, 6);
+  vis($("layG"), groupOn, 6);
+  vis($("tplHead"), editorOn, 6);
+  const fhOn = fade([[0, 0], [T(3, 1) + 0.04, 1], [T(6, 1), 0], [T(7, 1) + 0.04, 1], [T(8, 3), 0]], t);
+  vis($("form"), fhOn, 6);
+  const card = fade([[0, 1], [T(3, 1), 0], [T(6, 1), 1], [T(7, 1), 0], [T(8, 3), 1]], t, 22);
+  $("shape").style.boxShadow = `0 1.6px 3.6px rgba(0,0,0,${(0.13 * card).toFixed(3)})`;
+  $("shape").style.borderRadius = 4 * card + "px";
+
+  // ---- templates editor ----
+  const enters = TYPE.map((s) => s[3]);
+  let count = 0;
+  if (t >= enters[0] && t < T(3, 1) + 0.3) count = enters.slice(0, 4).filter((e) => t >= e).length;
+  if (t >= T(3, 1) + 0.3) count = 4;
+  if (t >= enters[4]) count = 5;
+  if (t >= T(8, 3)) count = 0;
+  const adding = on(t, 0, T(2, 2)) || on(t, T(6, 2), T(6, 4));
+  const dirty = on(t, enters[0], T(2, 3)) || on(t, enters[4], T(6, 4));
+  const saving = on(t, T(2, 3), T(2, 4)) || on(t, T(6, 4), T(6, 4) + 0.25);
+  const justSaved = on(t, T(2, 4), T(3, 1) + 0.4) || on(t, T(6, 4) + 0.25, T(7, 1) + 0.4);
+
+  const rows = document.querySelectorAll(".erow");
+  rows.forEach((r, i) => {
+    const e = i < 4 ? enters[i] : enters[4];
+    const o = fade([[0, 0], [e, 1, "snap"], [T(8, 3), 0, "snap"]], t);
+    r.style.top = i * PITCH + "px";
+    r.style.visibility = o ? "visible" : "hidden";
+    const txt = r.querySelector(".text");
+    const since = t - e;
+    txt.style.translate = since >= 0 && since < 0.6 && t < T(3, 1) + 1 || (i === 4 && since >= 0 && since < 0.6) ? `${(9 * (1 - spring(since, 26, 0.9))).toFixed(2)}px 0` : "0 0";
+  });
+  const emptyO = fade([[0, 1], [0, 0], [T(8, 3) + 0.2, 1]], t, 40);
+  vis($("eEmpty"), emptyO, 6);
+  const addRowY = tr([[0, 0], [enters[0], PITCH], [enters[1], 2 * PITCH], [enters[2], 3 * PITCH], [enters[3], 4 * PITCH], [enters[4], 5 * PITCH], [T(8, 3), 0, "snap"]], t, 26, 0.86);
+  $("eAddRow").style.top = addRowY + "px";
+  vis($("eAddRow"), fade([[0, 0], [0.01, 1], [T(2, 2), 0], [T(6, 2), 1], [T(6, 4), 0]], t, 44), 4);
+  const addBtnY = tr([[0, M.emptyH], [0.3, 4 * PITCH, "snap"], [T(6, 3), 5 * PITCH, "snap"], [T(8, 3), M.emptyH, "snap"]], t);
+  $("eAddBtn").style.top = addBtnY + "px";
+  vis($("eAddBtn"), fade([[0, 1], [0.01, 0], [T(2, 2) + 0.05, 1], [T(6, 2) + 0.02, 0], [T(6, 4) + 0.05, 1]], t, 44), 4);
+  const ty = typed(t);
+  const blinkOn = ty.typing || Math.floor(real / 0.53) % 2 === 0;
+  $("eField").innerHTML = (ty.text ? `<span>${ty.text}</span>` : "") + `<span class="caret" style="opacity:${blinkOn ? 1 : 0}"></span>` + (ty.text ? "" : '<span class="ph">Add an item</span>');
+
+  const nc = (n) => (n ? `${n} item${n === 1 ? "" : "s"}` : "No template");
+  swap($("navCount"), [[0, nc(0)], [enters[0], nc(1)], [enters[1], nc(2)], [enters[2], nc(3)], [enters[3], nc(4)], [enters[4], nc(5)], [T(8, 3), nc(0)]], t);
+  $("navCount").classList.toggle("none", count === 0);
+  vis($("ePill"), count ? 1 : 0, 0);
+  $("ePill").style.display = count ? "" : "none";
+  swap($("ePill").firstChild, [[0, ""], [enters[0], "1"], [enters[1], "2"], [enters[2], "3"], [enters[3], "4"], [enters[4], "5"], [T(8, 3), ""]], t);
+  vis($("eDrag"), fade([[0, 0], [enters[1], 1], [T(8, 3), 0, "snap"]], t), 4);
+
+  vis($("unsaved"), fade([[0, 0], [enters[0], 1], [T(2, 3), 0], [enters[4], 1], [T(6, 4), 0]], t, 40), 4);
+  const savedO = fade([[0, 0], [T(2, 4), 1], [T(3, 1) + 0.4, 0, "snap"], [T(6, 4) + 0.25, 1], [T(7, 1) + 0.4, 0, "snap"]], t, 40);
+  $("saved").innerHTML = `${icon("check", 14)}Saved`;
+  vis($("saved"), savedO, 4);
+  $("saved").style.display = savedO > 0.003 ? "" : "none";
+  const SAVING = '<span style="display:flex;gap:8px;align-items:center"><span class="spinner"></span>Saving…</span>';
+  swap($("saveLbl"), [[0, "Save"], [T(2, 3), SAVING], [T(2, 4), "Save"], [T(6, 4), SAVING], [T(6, 4) + 0.25, "Save"]], t);
+  for (const sp of $("saveLbl").querySelectorAll(".spinner")) sp.style.rotate = (((real % 0.7) / 0.7) * 360).toFixed(1) + "deg";
+  const sw2 = tr([[0, M.saveW], [T(2, 3), M.savingW], [T(2, 4), M.saveW], [T(6, 4), M.savingW], [T(6, 4) + 0.25, M.saveW]], t, 30, 0.9);
+  $("save").style.width = sw2 + "px";
+  const saveOp = tr([[0, 0.5], [enters[0], 1], [T(2, 3), 0.8], [T(2, 4), 0.5], [enters[4], 1], [T(6, 4), 0.8], [T(6, 4) + 0.25, 0.5]], t, 40, 1);
+  $("save").style.opacity = saveOp;
+  $("discard").style.opacity = dirty && !saving ? 1 : 0.5;
+  $("save").classList.toggle("hv", dirty && !saving);
+
+  // ---- Checklist group ----
+  const top = tr(K.rowsTop, t, 20);
+  const listOn = fade([[0, 1], [T(7, 4), 0], [T(8, 1) + 0.06, 1]], t, 40);
+  const land = (i) => fade([[0, 0], [T(3, 2) + i * 0.045, 1, null, 26], [RESET, 0, "snap"]], t, 26);
+  const landedAll = t >= T(3, 2);
+  document.querySelectorAll(".grow").forEach((r, i) => {
+    const o = t < T(3, 2) + 0.5 && t >= T(3, 1) ? land(i) : (t >= T(3, 1) ? 1 : 0);
+    r.style.top = top + i * PITCH + (1 - o) * 10 + "px";
+    vis(r, o * listOn, 4);
+    const tc = CHECK[i], checked = t >= tc && t < RESET;
+    const b = r.querySelector(".box"), p = r.querySelector("path");
+    const f = checked ? ease(clamp((t - tc) / 0.07)) : 0;
+    b.style.background = f ? `rgba(0,120,212,${f})` : "#fff";
+    b.style.borderColor = checked ? "#0078d4" : "";
+    b.classList.toggle("off", !checked);
+    const d = checked ? ease(clamp((t - tc - 0.035) / 0.17)) : 0;
+    p.style.strokeDashoffset = (23 * (1 - d)).toFixed(2);
+    p.style.visibility = d > 0 ? "visible" : "hidden";
+    const press = 1 - 0.1 * (spring(t - tc + 0.03, 40, 1) - spring(t - tc - 0.05, 30, 0.8));
+    b.style.scale = checked || t > tc - 0.03 ? press.toFixed(4) : "1";
+    r.classList.toggle("done", checked);
+    r.querySelector(".text").style.color = checked ? `rgb(${[50, 49, 48].map((c, k) => Math.round(c + ([138, 136, 134][k] - c) * f)).join(",")})` : "";
+  });
+  const rowsN = t >= T(8, 1) && t < RESET ? 5 : 4;
+  $("gAdd").style.top = top + rowsN * PITCH - 2 + "px";
+  vis($("gAdd"), landedAll ? listOn : 0, 4);
+  $("gProg").style.top = top - 36 + "px";
+  vis($("gProg"), (t >= T(3, 1) ? fade([[0, 0], [T(3, 2), 1], [RESET, 0, "snap"]], t) : 0) * listOn, 4);
+  const lbl = (n, of) => `<span>${n} of ${of} done</span>`;
+  swap($("progLbl"), [[0, lbl(0, 4)], [CHECK[0], lbl(1, 4)], [CHECK[1], lbl(2, 4)], [CHECK[2], lbl(3, 4)], [CHECK[3], "<strong>All items done</strong>"], [T(8, 2), lbl(4, 5)], [RESET, lbl(0, 4)]], t);
+  swap($("progPct"), [[0, "0%"], [CHECK[0], "25%"], [CHECK[1], "50%"], [CHECK[2], "75%"], [CHECK[3], "100%"], [T(8, 2), "80%"], [RESET, "0%"]], t);
+  const pct = tr([[0, 0], [CHECK[0], 25], [CHECK[1], 50], [CHECK[2], 75], [CHECK[3], 100], [T(8, 2), 80], [RESET, 0, "snap"]], t, 20, 0.8);
+  $("bar").style.width = clamp(pct, 0, 100) + "%";
+  $("bar").style.background = col([[0, "#0078d4"], [CHECK[3], "#107c10"], [T(8, 2), "#0078d4"]], t);
+  // Sync dot slot: pops in, then leaves as the banner
+  const dotW = tr([[0, 0], [T(7, 2), 6], [T(7, 3), 0]], t, 24, 0.86);
+  $("dotSlot").style.width = Math.max(0, dotW) + "px";
+  $("dotSlot").style.marginLeft = Math.max(0, dotW) - 6 + "px";
+
+  // ---- pill ⇄ board card ----
+  const pcO = fade([[0, 0], [T(3, 2), 1], [T(6, 1), 0], [T(7, 1) + 0.18, 1], [T(8, 3), 0]], t);
+  const [px, py, pww, phh] = tr(K.pc, t, 19);
+  place($("pc"), px, py, pww, phh);
+  const cardOn = fade([[0, 0], [T(5, 1) + 0.04, 1], [T(5, 4), 0]], t, 30);
+  const pc = $("pc");
+  pc.style.opacity = pcO; pc.style.visibility = pcO < 0.003 ? "hidden" : "visible";
+  pc.style.borderRadius = tr([[0, 10], [T(5, 1), 4], [T(5, 4), 10]], t, 19) + "px";
+  pc.style.background = col([[0, "#f3f2f1"], [CHECK[3], "#dff6dd"], [T(5, 1), "#ffffff"], [T(5, 4), "#dff6dd"], [T(8, 2), "#f3f2f1"]], t);
+  pc.style.color = col([[0, "#605e5c"], [CHECK[3], "#107c10"], [T(8, 2), "#605e5c"]], t);
+  const lift = tr([[0, 0], [T(4, 4), 0.6], [T(5, 1), 0.3], [T(5, 3), 1], [T(5, 4), 0]], t, 19, 1);
+  pc.style.boxShadow = `0 ${1.6 + 4.8 * lift}px ${3.6 + 10.8 * lift}px rgba(0,0,0,${(0.13 * clamp(lift * 3)).toFixed(3)})`;
+  vis($("pcPill"), 1 - cardOn, 5);
+  vis($("pcCard"), cardOn, 5);
+  $("pcBar").style.opacity = cardOn;
+  vis($("pcField"), fade([[0, 0], [T(5, 2), 1], [T(5, 4), 0]], t, 30), 4, 6);
+  swap($("pcCount"), [[0, "0/4"], [CHECK[0], "1/4"], [CHECK[1], "2/4"], [CHECK[2], "3/4"], [CHECK[3], "4/4"], [T(8, 2), "4/5"], [RESET, "0/4"]], t);
+  const chk = tr([[0, 0], [CHECK[3], 12], [T(8, 2), 0], [RESET, 0, "snap"]], t, 24, 0.86);
+  $("pcCheck").style.width = clamp(chk, 0, 12) + "px";
+  $("pcCheck").style.marginRight = clamp(chk, 0, 12) / 3 - 4 + "px";
+  vis($("pcCheck"), clamp(chk / 12), 3);
+
+  // ---- dot → info banner → dialog → success banner ----
+  const [bx, by, bw, bh] = tr(K.bn, t, 19);
+  const bs = tr([[0, 0], [T(7, 2), 1, null, 26], [RESET, 0, "snap"]], t, 26, 0.8);
+  const bnO = fade([[0, 0], [T(7, 2), 1, "snap"], [T(8, 3), 0], [RESET, 0, "snap"]], t);
+  const bn = $("bn");
+  place(bn, bx, by, bw, bh);
+  bn.style.scale = Math.max(0, bs).toFixed(4);
+  bn.style.opacity = bnO; bn.style.visibility = bnO < 0.003 || bs < 0.003 ? "hidden" : "visible";
+  bn.style.borderRadius = tr([[0, 3], [T(7, 3), 4], [RESET, 3, "snap"]], t) + "px";
+  bn.style.background = col([[0, "#0078d4"], [T(7, 3), "#eff6fc"], [T(7, 4), "#ffffff"], [T(8, 1), "#dff6dd"], [RESET, "#0078d4", "snap"]], t);
+  const dlg = fade([[0, 0], [T(7, 4), 1], [T(8, 1), 0]], t, 26);
+  bn.style.boxShadow = dlg > 0.003 ? `0 0 0 1px rgba(225,223,221,${dlg}), 0 6.4px 14.4px rgba(0,0,0,${0.14 * dlg})` : "none";
+  vis($("bnInfo"), fade([[0, 0], [T(7, 3) + 0.08, 1], [T(7, 4), 0]], t, 34), 5);
+  vis($("bnDialog"), fade([[0, 0], [T(7, 4) + 0.08, 1], [T(8, 1), 0]], t, 30), 5);
+  vis($("bnSuccess"), fade([[0, 0], [T(8, 1) + 0.1, 1], [RESET, 0, "snap"]], t, 30), 5);
+
+  // ---- dialog button → NEW row ----
+  const [rx, ry, rw, rh] = tr(K.br, t, 19);
+  const br = $("br");
+  place(br, rx, ry, rw, rh);
+  const brO = fade([[0, 0], [T(7, 4) + 0.16, 1], [T(8, 3), 0], [RESET, 0, "snap"]], t, 30);
+  br.style.opacity = brO; br.style.visibility = brO < 0.003 ? "hidden" : "visible";
+  br.style.background = col([[0, "#0078d4"], [T(8, 1), "#eff6fc"], [RESET, "#0078d4", "snap"]], t);
+  br.style.borderRadius = tr([[0, 2], [T(8, 1), 4], [RESET, 2, "snap"]], t) + "px";
+  const asRow = fade([[0, 0], [T(8, 1) + 0.07, 1], [RESET, 0, "snap"]], t, 30);
+  vis($("brBtn"), 1 - fade([[0, 0], [T(8, 1), 1], [RESET, 0, "snap"]], t, 40), 4);
+  vis($("brRow"), asRow, 5);
+
+  // ---- cursor ----
+  const [mx, my] = tr(K.cur, t, 15, 0.96);
+  let press = 0;
+  for (const c of K.clicks) for (const sh of [-L, 0, L]) { const d = t - (c + sh); press = Math.max(press, spring(d + 0.03, 60, 1) - spring(d - 0.06, 30, 1)); }
+  const cz = 1.15;
+  const cu = $("cursor");
+  cu.style.left = mx + "px"; cu.style.top = my + "px";
+  cu.style.transform = `scale(${(cz * (1 - 0.12 * press)).toFixed(4)})`;
+
+  // hover: whatever sits under the cursor tip
+  const r = cu.getBoundingClientRect();
+  const hx = r.left + 1, hy = r.top + 1;
+  for (const e of hoverables) {
+    const b = e.getBoundingClientRect();
+    e.classList.toggle("hov", e.style.visibility !== "hidden" && hx >= b.left && hx <= b.right && hy >= b.top && hy <= b.bottom && getComputedStyle(e).opacity > 0.5);
+  }
+  // the fresh row keeps its NEW tag unless hovered, like the app
+  const hovRow = $("brRow"); const bb = br.getBoundingClientRect();
+  hovRow.classList.toggle("hov", asRow > 0.5 && hx >= bb.left && hx <= bb.right && hy >= bb.top && hy <= bb.bottom);
+  return t;
+}
+
+// ---------- sound events (read by the audio mixer) ----------
+function events() {
+  const ev = [];
+  KEYS.forEach((ks, s) => { ks.forEach((k) => ev.push({ t: k.t, type: "tap" })); ev.push({ t: TYPE[s][3], type: "enter" }); });
+  ev.push({ t: T(2, 2), type: "tap" });                               // Esc
+  for (const c of K.clicks) ev.push({ t: c, type: "click" });
+  CHECK.forEach((c) => ev.push({ t: c + 0.035, type: "tick" }));
+  ev.push({ t: T(2, 4), type: "chime" }, { t: T(6, 4) + 0.25, type: "chime" });
+  for (const s of [T(3, 1), T(3, 2), T(4, 4), T(5, 1), T(5, 4), T(6, 1), T(7, 1), T(7, 3), T(8, 2), T(8, 3)]) ev.push({ t: s, type: "soft" });
+  ev.push({ t: T(7, 2), type: "pop" }, { t: T(5, 2), type: "pop" });
+  return ev.sort((a, b) => a.t - b.t);
+}
+
+build();
+keys();
+hoverables = [...document.querySelectorAll(".hv")];
+window.seek = (t) => seekAt(t / SLOW, t);
+window.EVENTS = events().map((e) => ({ ...e, t: e.t * SLOW }));
+window.L = L * SLOW;
+const q = new URLSearchParams(location.search).get("t");
+window.seek(q ? parseFloat(q) : 0);
+window.ready = true;
+</script>
+</body>
+</html>
